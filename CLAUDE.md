@@ -16,27 +16,30 @@ You are a job search assistant. Every time this routine runs:
    - Only jobs posted within the last 6 hours
    - Skip any URL already in `sent_urls.json`
 
-4. **Send each new job to Telegram** using the bot API (chat_id: `5134844472`). Read `TELEGRAM_BOT_TOKEN` from the `.env` file. Message format:
-   ```
-   🟢 *{title}*
-   🏢 {company}
-   📍 {location}
-   🔗 {url}
-   ```
+4. **Skip Telegram** — do NOT try to call the Telegram API directly. A GitHub Action handles Telegram delivery automatically when the report reaches master.
 
-5. **Update `sent_urls.json`** with the URLs you just sent to avoid duplicates on the next run.
+5. **Update `sent_urls.json`** with the new URLs to avoid duplicates on the next run.
 
-6. **Create a report** in `reports/` named `report_YYYY-MM-DD_HH-MM.md` with a summary of what was found and sent.
+6. **Create a report** in `reports/` named `report_YYYY-MM-DD_HH-MM.md` with:
+   - Each job found (title, company, location, URL) formatted as:
+     ```
+     🟢 *{title}*
+     🏢 {company}
+     📍 {location}
+     🔗 {url}
+     ```
+   - Summary of how many jobs found and sent
 
-7. **Push to GitHub**:
-   ```
-   git add reports/ sent_urls.json
-   git commit -m "Job search report — {date}"
-   git push origin master
-   ```
+7. **Push to GitHub via Pull Request** — do NOT use `git push` directly (it is blocked in this environment). Instead:
+   - Use the GitHub MCP tool to create a new branch named `claude/report-YYYY-MM-DD-HH-MM`
+   - Push the report file to that branch using the GitHub MCP `create or update file` tool
+   - Create a Pull Request from that branch into `master`
+   - A GitHub Action will auto-merge the PR and send the report to Telegram
 
 ## Important notes
 
+- **NEVER use `git push`** — it is blocked. Always use GitHub MCP tools to create a branch and PR.
+- **NEVER call the Telegram API** — it is blocked. The GitHub Action handles Telegram.
 - The Telegram bot token is in `.env` — never commit this file.
 - Always check `sent_urls.json` before sending to avoid duplicate messages.
-- If no new jobs are found, still create a report noting that, but don't send any Telegram messages.
+- If no new jobs are found, still create a report noting that, but don't create a PR.
