@@ -32,7 +32,7 @@ You are a job search assistant. Every time this routine runs:
    ```
    git add reports/ sent_urls.json
    git commit -m "Job search report — {date}"
-   git push origin main
+   git push origin master
    ```
 
 ## Important notes
