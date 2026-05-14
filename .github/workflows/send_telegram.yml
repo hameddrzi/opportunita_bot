@@ -2,6 +2,7 @@ name: Send Telegram Report
 
 on:
   push:
+    branches: [master]
     paths:
       - 'reports/**.md'
 
@@ -11,19 +12,15 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Get latest report
-        id: report
+      - name: Send report to Telegram
         run: |
-          LATEST=$(ls reports/*.md | sort | tail -1)
-          echo "path=$LATEST" >> "$GITHUB_OUTPUT"
-
-      - name: Send to Telegram
-        run: |
-          PAYLOAD=$(jq -n \
-            --arg chat_id "5134844472" \
-            --rawfile text "${{ steps.report.outputs.path }}" \
-            '{chat_id: $chat_id, text: $text, parse_mode: "Markdown"}')
-
-          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
+          LATEST=$(ls reports/*.md 2>/dev/null | sort | tail -1)
+          if [ -z "$LATEST" ]; then
+            echo "No report found"
+            exit 0
+          fi
+          CONTENT=$(cat "$LATEST" | head -c 4000)
+          curl -s -X POST \
+            "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
             -H "Content-Type: application/json" \
-            -d "$PAYLOAD"
+            -d "{\"chat_id\": \"5134844472\", \"text\": $(echo "$CONTENT" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))')}"
